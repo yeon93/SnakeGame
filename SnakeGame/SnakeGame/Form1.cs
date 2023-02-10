@@ -16,66 +16,64 @@ namespace SnakeGame
         private List<Circle> Snake = new List<Circle>();
         private Circle food = new Circle();
 
-        int maxWidth;
-        int maxHeight;
+        int maxWidth, maxHeight;
 
-        int score;
-        int highScore;
+        int score = 0; 
+        int highScore = 0;
 
         Random rand = new Random();
-
-        bool goLeft, goRight, goDown, goUp;
-
 
         public Form1()
         {
             InitializeComponent();
-            new Settings();
+            new Settings();            
         }
         
         /// <summary>
-        ///입력방향과 현재 진행방향이 동일해야 함
+        /// 키보드 입력에 관한 정의
+        /// 엔터 : 게임 시작
+        /// 방향키 : 뱀 이동방향 조작
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void KeyIsDown(object sender, KeyEventArgs e)
+        
+        
         {
-            if (e.KeyCode == Keys.Left && Settings.directions != "right") 
-            { goLeft = true; }
-            if (e.KeyCode == Keys.Right && Settings.directions != "left")
-            { goRight = true; }
-            if (e.KeyCode == Keys.Up && Settings.directions != "down")
-            { goUp = true; }
-            if (e.KeyCode == Keys.Down && Settings.directions != "up")
-            { goDown = true; }
+            //엔터키로 게임 시작
+            if (e.KeyCode == Keys.Enter)
+            {
+                this.startButton.PerformClick();
+            }
+
+            //방향키
+            if (e.KeyCode == Keys.Left && Settings.direction != Directions.Right)
+            {
+                Settings.direction = Directions.Left;
+            }
+            else if (e.KeyCode == Keys.Right && Settings.direction != Directions.Left)
+            {
+                Settings.direction = Directions.Right;
+            }
+            else if (e.KeyCode == Keys.Up && Settings.direction != Directions.Down)
+            {
+                Settings.direction = Directions.Up;
+            }
+            else if (e.KeyCode == Keys.Down && Settings.direction != Directions.Up)
+            {
+                Settings.direction = Directions.Down;
+            }
         }
 
         /// <summary>
-        /// 키를 누르고 있다가 떼는 순간 발생
+        /// 스크린샷 촬영, 저장
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void KeyIsUp(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Left)
-            { goLeft = false; }
-            if (e.KeyCode == Keys.Right)
-            { goRight = false; }
-            if (e.KeyCode == Keys.Up)
-            { goUp = false; }
-            if (e.KeyCode == Keys.Down)
-            { goDown = false; }
-        }
-
-        private void StartGame(object sender, EventArgs e)
-        {
-            RestartGame();
-        }
-
         private void TakeSnapshot(object sender, EventArgs e)
         {
             Label caption = new Label();
-            caption.Text = "I scored: " + score + " and my Highscore is " + highScore + " on the Snake Game from MOO ICT";
+            caption.Text = "Score: " + score + " // Highscore: " + highScore ;
             caption.Font = new Font("Ariel", 12, FontStyle.Bold);
             caption.ForeColor = Color.Purple;
             caption.AutoSize = false;
@@ -83,9 +81,9 @@ namespace SnakeGame
             caption.Height = 30;
             caption.TextAlign = ContentAlignment.MiddleCenter;
             picCanvas.Controls.Add(caption);
-
+            
             SaveFileDialog dialog = new SaveFileDialog();
-            dialog.FileName = "Snake Game SnapShot MOO ICT";
+            dialog.FileName = "Snake Game SnapShot";
             dialog.DefaultExt = "jpg";
             dialog.Filter = "JPG Image File | *.jpg";
             dialog.ValidateNames = true;
@@ -101,54 +99,52 @@ namespace SnakeGame
             }
         }
 
+        /// <summary>
+        /// interval(~200ms) 간격으로 게임 진행
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void gameTimer_Tick(object sender, EventArgs e)
         {
-            if (goLeft)
-            { Settings.directions = "left"; }
-            if (goRight)
-            { Settings.directions = "right"; }
-            if (goDown)
-            { Settings.directions = "down"; }
-            if (goUp)
-            { Settings.directions = "up"; }
-            // end of directions
-
+            //뱀 업데이트
             for (int i = Snake.Count - 1; i >= 0; i--)
             {
+                //head
                 if (i == 0)
                 {
-                    switch (Settings.directions)
+                    switch (Settings.direction)
                     {
-                        case "left":
-                            Snake[i].X--;
-                            break;
-                        case "right":
-                            Snake[i].X++;
-                            break;
-                        case "down":
-                            Snake[i].Y++;
-                            break;
-                        case "up":
-                            Snake[i].Y--;
-                            break;
+                        case Directions.Left:
+                            Snake[i].X--; break;
+                        case Directions.Right:
+                            Snake[i].X++; break;
+                        case Directions.Up:
+                            Snake[i].Y++; break;
+                        case Directions.Down:
+                            Snake[i].Y--; break;
                     }
-                    if (Snake[i].X < 0)
-                    { Snake[i].X = maxWidth; }
-                    if (Snake[i].X > maxWidth)
-                    { Snake[i].X = 0; }
-                    if (Snake[i].Y < 0)
-                    { Snake[i].Y = maxHeight; }
-                    if (Snake[i].Y > maxHeight)
-                    { Snake[i].Y = 0; }
-                    if (Snake[i].X == food.X && Snake[i].Y == food.Y)
-                    { EatFood(); }
 
-                    for (int j = 1; j < Snake.Count; j++)
+                    if (Snake[i].X == food.X && Snake[i].Y == food.Y)
+                    { 
+                        EatFood();
+                    }
+
+                    //head가 picCanvas 테두리에 닿는 경우 game over
+                    if (Snake[i].X < 0 || Snake[i].X > maxWidth || Snake[i].Y < 0 || Snake[i].Y > maxHeight)
                     {
-                        if (Snake[i].X == Snake[j].X && Snake[i].Y == Snake[j].Y)
-                        { GameOver(); }
+                        GameOver();
+                    }       
+
+                    //head가 body 부분에 닿는 경우 game over
+                    for (int j = 1; j < Snake.Count; j++) 
+                    {
+                        if (Snake[i].X == Snake[j].X && Snake[i].Y == Snake[j].Y)  
+                        { 
+                            GameOver(); 
+                        }
                     }
                 }
+                //bo
                 else
                 {
                     Snake[i].X = Snake[i - 1].X;
@@ -161,9 +157,9 @@ namespace SnakeGame
         private void UpdatePictureBoxGraphics(object sender, PaintEventArgs e)
         {
             Graphics canvas = e.Graphics;
-
             Brush snakeColor;
-
+             
+            //뱀 그리기
             for (int i = 0; i < Snake.Count; i++)
             {
                 if (i == 0)
@@ -186,23 +182,61 @@ namespace SnakeGame
             Settings.Width, Settings.Height
             ));
 
-    }
+            //격자 그리기
+            int Xn = picCanvas.Width;
+            int Yn = picCanvas.Height;
+            Pen pen = new Pen(Color.FromArgb(150, 255, 255, 255));
+
+            for (int x = 0; x < Xn - 1; x += 20)
+            {
+                e.Graphics.DrawLine(pen, x, 0, x, Yn);
+            }
+            for (int y = 0; y < Yn - 1; y += 20)
+            {
+                e.Graphics.DrawLine(pen, 0, y, Xn, y);
+            }
+        }
+
+        /// <summary>
+        /// 강제종료
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void finishButton_Click(object sender, EventArgs e)
+        {
+            GameOver();
+        }
+
+        private void StartGame_Click(object sender, EventArgs e)
+        {
+            RestartGame();
+        }
+
+        /// <summary>
+        /// 처음 snake : 3(head(1) + body(2)) 
+        /// food : 랜덤한 위치에 생성
+        /// </summary>
         private void RestartGame()
         {
+            txtGameOver.Visible = false;
+
             maxWidth = picCanvas.Width / Settings.Width - 1;
             maxHeight = picCanvas.Height / Settings.Height - 1;
 
+            picCanvas.Controls.Clear();
             Snake.Clear();
 
             startButton.Enabled = false;
             snapButton.Enabled = false;
+            finishButton.Enabled = true;
+
             score = 0;
             txtScore.Text = "Score: " + score;
 
-            Circle head = new Circle { X = 10, Y = 5 };
+            Circle head = new Circle { X = 15, Y = 15};
             Snake.Add(head); 
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 2; i++)
             {
                 Circle body = new Circle();
                 Snake.Add(body);
@@ -211,13 +245,16 @@ namespace SnakeGame
             food = new Circle { X = rand.Next(2, maxWidth), Y = rand.Next(2, maxHeight) };
 
             gameTimer.Start();
-
         }
 
+        /// <summary>
+        /// 뱀의 머리가 음식에 닿으면 점수 +1, 몸의 길이 +1, interval -5
+        /// 새로운 음식을 랜덤한 장소에 생성
+        /// </summary>
         private void EatFood()
             {
                 score += 1;
-
+                gameTimer.Interval -= 5;
                 txtScore.Text = "Score: " + score;
 
                 Circle body = new Circle
@@ -236,15 +273,17 @@ namespace SnakeGame
             gameTimer.Stop();
             startButton.Enabled = true;
             snapButton.Enabled = true;
+            finishButton.Enabled = false;
 
-            if (score > highScore)
+            if (score > highScore || highScore == 0)
             {
                 highScore = score;
 
-                txtHighScore.Text = "High Score: " + Environment.NewLine + highScore;
+                txtHighScore.Text = "Highest : " + highScore;
                 txtHighScore.ForeColor = Color.Maroon;
-                txtHighScore.TextAlign = ContentAlignment.MiddleCenter;
+                txtHighScore.TextAlign = ContentAlignment.MiddleLeft;
+                txtGameOver.Visible = true;
             }
         }
-        }
+    }
 }

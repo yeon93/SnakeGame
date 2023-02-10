@@ -13,8 +13,8 @@ namespace SnakeGame
 
         public Circle()
         {
-            X = 0;
-            Y = 0;
+            X = -1;
+            Y = -1;
         }
     }
 }
